@@ -2,6 +2,8 @@ const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 
 const Place = require("../models/place");
+const User = require("../models/user");
+
 const HttpError = require("../models/http-error");
 const getCoordsByAddress = require("../util/location");
 
@@ -30,22 +32,25 @@ const getPlaceById = async (req, res, next) => {
 
 const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid;
-  let places;
+
+  let userWithPlaces;
 
   try {
-    places = await Place.find({ creator: userId });
+    userWithPlaces = await User.findById(userId).populate("places");
   } catch (err) {
     const error = new HttpError("Something went wrong, please try again.", 500);
     return next(error);
   }
 
-  if (!places || places.length === 0) {
+  if (!userWithPlaces || userWithPlaces.places.length === 0) {
     return next(
       new HttpError("Could not find  places for the provided user id ", 404)
     );
   }
   res.json({
-    places: places.map((place) => place.toObject({ getters: true })),
+    places: userWithPlaces.places.map((place) =>
+      place.toObject({ getters: true })
+    ),
   });
 };
 
@@ -74,8 +79,32 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  let user;
   try {
-    await createdPlace.save();
+    user = await User.findById(creator);
+  } catch (err) {
+    const error = new HttpError(
+      "Could not find a user for the provided ID, please try again ",
+      500
+    );
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError(
+      "Could not find a user for the provided ID, please try again ",
+      404
+    );
+    return next(error);
+  }
+
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    await createdPlace.save({ session: session });
+    user.places.push(createdPlace);
+    await user.save({ session: session });
+    await session.commitTransaction();
   } catch (err) {
     const error = new HttpError(
       "Creating place failed, please try again ",
@@ -107,8 +136,8 @@ const updatePlace = async (req, res, next) => {
     );
   }
 
-  place.title = req.body.title;
-  place.description = req.body.description;
+  place.title = title;
+  place.description = description;
 
   try {
     await place.save();
@@ -123,13 +152,38 @@ const updatePlace = async (req, res, next) => {
 const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid;
 
+  let place;
   try {
-    await Place.findByIdAndDelete(placeId);
+    place = await Place.findById(placeId).populate("creator");
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, please try again later",
       500
     );
+    return next(error);
+  }
+
+  if (!place) {
+    const error = new HttpError(
+      "Could not find a place for the provided ID",
+      404
+    );
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await place.deleteOne({ session: sess });
+    place.creator.places.pull(place);
+    await place.creator.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      "Could not delete the place, try again later",
+      500
+    );
+    console.log(err);
     return next(error);
   }
 
@@ -141,32 +195,3 @@ exports.getPlacesByUserId = getPlacesByUserId;
 exports.createPlace = createPlace;
 exports.updatePlace = updatePlace;
 exports.deletePlace = deletePlace;
-
-// let DUMMY_PLACES = [
-//   {
-//     id: "p1",
-//     title: "Empire State Building",
-//     description: "One of the most famous skyscrapers in the world",
-//     imageUrl:
-//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
-//     address: "20 W 34th St., New York, NY 10001, United States",
-//     location: {
-//       lat: 40.7484405,
-//       lng: -73.9878531,
-//     },
-//     creator: "u1",
-//   },
-//   {
-//     id: "p2",
-//     title: "Empire State Building",
-//     description: "One of the most famous skyscrapers in the world",
-//     imageUrl:
-//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
-//     address: "20 W 34th St., New York, NY 10001, United States",
-//     location: {
-//       lat: 40.7484405,
-//       lng: -73.9878531,
-//     },
-//     creator: "u1",
-//   },
-// ];

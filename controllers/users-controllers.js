@@ -1,6 +1,5 @@
 const HttpError = require("../models/http-error");
 const { validationResult } = require("express-validator");
-const mongoose = require("mongoose");
 
 const User = require("../models/user");
 
@@ -28,7 +27,7 @@ const signup = async (req, res, next) => {
     return next(new HttpError("Invalid input passed", 422));
   }
 
-  const { name, email, password, image, places } = req.body;
+  const { name, email, password, image } = req.body;
 
   let existingUser;
   try {
@@ -51,7 +50,7 @@ const signup = async (req, res, next) => {
     email,
     password,
     image,
-    places,
+    places: [],
   });
 
   try {
