@@ -1,39 +1,9 @@
-const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 
 const Place = require("../models/place");
 const HttpError = require("../models/http-error");
 const getCoordsByAddress = require("../util/location");
-
-// let DUMMY_PLACES = [
-//   {
-//     id: "p1",
-//     title: "Empire State Building",
-//     description: "One of the most famous skyscrapers in the world",
-//     imageUrl:
-//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
-//     address: "20 W 34th St., New York, NY 10001, United States",
-//     location: {
-//       lat: 40.7484405,
-//       lng: -73.9878531,
-//     },
-//     creator: "u1",
-//   },
-//   {
-//     id: "p2",
-//     title: "Empire State Building",
-//     description: "One of the most famous skyscrapers in the world",
-//     imageUrl:
-//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
-//     address: "20 W 34th St., New York, NY 10001, United States",
-//     location: {
-//       lat: 40.7484405,
-//       lng: -73.9878531,
-//     },
-//     creator: "u1",
-//   },
-// ];
 
 const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
@@ -42,11 +12,12 @@ const getPlaceById = async (req, res, next) => {
   try {
     place = await Place.findById(placeId);
     res.json({ place: place.toObject({ getters: true }) });
-  } catch (error) {
-    throw new HttpError(
+  } catch (err) {
+    const error = new HttpError(
       "Could not find a place for the provided place id ",
       500
     );
+    return next(error);
   }
 
   if (!place) {
@@ -152,9 +123,8 @@ const updatePlace = async (req, res, next) => {
 const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid;
 
-  let place;
   try {
-    place = await Place.findByIdAndDelete(placeId);
+    await Place.findByIdAndDelete(placeId);
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, please try again later",
@@ -171,3 +141,32 @@ exports.getPlacesByUserId = getPlacesByUserId;
 exports.createPlace = createPlace;
 exports.updatePlace = updatePlace;
 exports.deletePlace = deletePlace;
+
+// let DUMMY_PLACES = [
+//   {
+//     id: "p1",
+//     title: "Empire State Building",
+//     description: "One of the most famous skyscrapers in the world",
+//     imageUrl:
+//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
+//     address: "20 W 34th St., New York, NY 10001, United States",
+//     location: {
+//       lat: 40.7484405,
+//       lng: -73.9878531,
+//     },
+//     creator: "u1",
+//   },
+//   {
+//     id: "p2",
+//     title: "Empire State Building",
+//     description: "One of the most famous skyscrapers in the world",
+//     imageUrl:
+//       "https://upload.wikimedia.org/wikipedia/commons/1/10/Empire_State_Building_%28aerial_view%29.jpg",
+//     address: "20 W 34th St., New York, NY 10001, United States",
+//     location: {
+//       lat: 40.7484405,
+//       lng: -73.9878531,
+//     },
+//     creator: "u1",
+//   },
+// ];
