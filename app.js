@@ -1,8 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
+const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const placesRoutes = require("./routes/places-routes");
 const usersRoutes = require("./routes/users-routes");
@@ -14,15 +16,7 @@ app.use(bodyParser.json());
 
 app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE");
-  next();
-});
+app.use(cors());
 
 app.use("/api/places", placesRoutes);
 
@@ -45,12 +39,9 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(
-    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.2yibig1.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority
-  `
-  )
+  .connect(process.env.DB_CONNECT_URL)
   .then(() => {
-    app.listen(process.env.PORT || 5000);
+    app.listen(process.env.PORT || 8000);
     console.log("Connected to database");
   })
   .catch((err) => {

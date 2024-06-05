@@ -1,7 +1,7 @@
 const axios = require("axios");
 const HttpError = require("../models/http-error");
 
-const API_KEY = process.env.GOOGLE_API_KEY;
+const API_KEY = process.env.GOOGLE_GEOCODING_API_KEY;
 
 const getCoordsByAddress = async (address) => {
   const encodedAddress = encodeURIComponent(address);
@@ -10,6 +10,7 @@ const getCoordsByAddress = async (address) => {
   try {
     const response = await axios.get(url);
     const data = response.data;
+    console.log(data);
 
     if (!data || data.status === "ZERO_RESULTS") {
       const error = new HttpError(
