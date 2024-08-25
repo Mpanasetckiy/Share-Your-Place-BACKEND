@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const { uploadToGCS } = require("../middleware/file-upload");
 const User = require("../models/user");
 
 const getUsers = async (req, res, next) => {
@@ -58,10 +59,20 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
+  let imageUrl = null;
+  if (req.file) {
+    try {
+      imageUrl = await uploadToGCS(req.file);
+      console.log("url", imageUrl);
+    } catch (err) {
+      return next(new HttpError("Image upload failed, please try again.", 500));
+    }
+  }
+
   const createdUser = new User({
     name,
     email,
-    image: req.file.path,
+    image: imageUrl,
     password: hashedPassword,
     places: [],
   });
