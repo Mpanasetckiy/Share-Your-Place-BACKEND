@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const Place = require("../models/place");
 const User = require("../models/user");
 
+const { uploadToGCS } = require("../middleware/file-upload");
+
 const HttpError = require("../models/http-error");
 const getCoordsByAddress = require("../util/location");
 
@@ -71,12 +73,22 @@ const createPlace = async (req, res, next) => {
     return next(error);
   }
 
+  let imageUrl = null;
+  if (req.file) {
+    try {
+      imageUrl = await uploadToGCS(req.file);
+      console.log("url", imageUrl);
+    } catch (err) {
+      return next(new HttpError("Image upload failed, please try again.", 500));
+    }
+  }
+
   const createdPlace = new Place({
     title,
     description,
     address,
     location: coordinates,
-    image: req.file.path,
+    image: imageUrl,
     creator: req.userData.userId,
   });
 
