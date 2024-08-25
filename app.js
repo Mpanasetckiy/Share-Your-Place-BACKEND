@@ -27,14 +27,20 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-  if (req.file) {
-    fs.unlink(req.file.path, (err) => console.log(err));
+  if (req.file && req.file.path) {
+    fs.unlink(req.file.path, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+      }
+    });
   }
-  if (res.headerSent) {
+  if (res.headersSent) {
     return next(error);
   }
-  res.status(error.code || 500);
-  res.json({ message: error.message || "An unknown error occurred" });
+  res.status(error.statusCode || 500);
+  res.json({
+    message: error.message || "An unknown error occurred",
+  });
 });
 
 mongoose
