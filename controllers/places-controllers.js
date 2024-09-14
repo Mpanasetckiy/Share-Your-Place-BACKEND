@@ -67,6 +67,7 @@ const createPlace = async (req, res, next) => {
   const { title, description, address } = req.body;
 
   let coordinates;
+
   try {
     coordinates = await getCoordsByAddress(address);
   } catch (error) {
